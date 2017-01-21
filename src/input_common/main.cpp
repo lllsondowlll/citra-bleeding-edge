@@ -5,6 +5,9 @@
 #include "common/param_package.h"
 #include "input_common/analog_from_button.h"
 #include "input_common/main.h"
+#ifdef HAVE_SDL2
+#include "input_common/sdl.h"
+#endif
 
 namespace InputCommon {
 
@@ -15,12 +18,19 @@ void Init() {
     Input::RegisterFactory<Input::ButtonDevice>("keyboard", keyboard);
     Input::RegisterFactory<Input::AnalogDevice>("analog_from_button",
                                                 std::make_shared<InputCommon::AnalogFromButton>());
+#ifdef HAVE_SDL2
+    SDL::Init();
+#endif
 }
 
 void Shutdown() {
     Input::UnregisterFactory<Input::ButtonDevice>("keyboard");
     keyboard.reset();
     Input::UnregisterFactory<Input::AnalogDevice>("analog_from_button");
+
+#ifdef HAVE_SDL2
+    SDL::Shutdown();
+#endif
 }
 
 Keyboard* GetKeyboard() {
