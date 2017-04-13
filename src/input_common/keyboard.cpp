@@ -53,13 +53,6 @@ public:
         }
     }
 
-    void ChangeAllKeyStatus(bool pressed) {
-        std::lock_guard<std::mutex> guard(mutex);
-        for (const KeyButtonPair& pair : list) {
-            pair.key_button->status.store(pressed);
-        }
-    }
-
 private:
     std::mutex mutex;
     std::list<KeyButtonPair> list;
@@ -84,10 +77,6 @@ void Keyboard::PressKey(int key_code) {
 
 void Keyboard::ReleaseKey(int key_code) {
     key_button_list->ChangeKeyStatus(key_code, false);
-}
-
-void Keyboard::ReleaseAllKeys() {
-    key_button_list->ChangeAllKeyStatus(false);
 }
 
 } // namespace InputCommon

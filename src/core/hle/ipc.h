@@ -10,8 +10,7 @@
 
 namespace Kernel {
 
-/// Offset into command buffer of header
-static const int kCommandHeaderOffset = 0x80;
+static const int kCommandHeaderOffset = 0x80; ///< Offset into command buffer of header
 
 /**
  * Returns a pointer to the command buffer in the current thread's TLS
@@ -27,8 +26,8 @@ inline u32* GetCommandBuffer(const int offset = 0) {
                                     offset);
 }
 
-/// Offset into static buffers, relative to command buffer header
-static const int kStaticBuffersOffset = 0x100;
+static const int kStaticBuffersOffset =
+    0x100; ///< Offset into static buffers, relative to command buffer header
 
 /**
  * Returns a pointer to the static buffers area in the current thread's TLS

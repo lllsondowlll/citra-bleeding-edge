@@ -92,7 +92,8 @@ void GetSoftwareClosedFlag(Service::Interface* self) {
     LOG_WARNING(Service_PTM, "(STUBBED) called");
 }
 
-void CheckNew3DS(IPC::RequestBuilder& rb) {
+void CheckNew3DS(Service::Interface* self) {
+    u32* cmd_buff = Kernel::GetCommandBuffer();
     const bool is_new_3ds = Settings::values.is_new_3ds;
 
     if (is_new_3ds) {
@@ -100,15 +101,10 @@ void CheckNew3DS(IPC::RequestBuilder& rb) {
                                   "settings. Citra does not fully support New 3DS emulation yet!");
     }
 
-    rb.Push(RESULT_SUCCESS);
-    rb.Push(is_new_3ds);
+    cmd_buff[1] = RESULT_SUCCESS.raw;
+    cmd_buff[2] = is_new_3ds ? 1 : 0;
 
     LOG_WARNING(Service_PTM, "(STUBBED) called isNew3DS = 0x%08x", static_cast<u32>(is_new_3ds));
-}
-
-void CheckNew3DS(Service::Interface* self) {
-    IPC::RequestBuilder rb(Kernel::GetCommandBuffer(), 0x40A, 0, 0); // 0x040A0000
-    CheckNew3DS(rb);
 }
 
 void Init() {
@@ -138,9 +134,9 @@ void Init() {
         ASSERT_MSG(archive_result.Succeeded(), "Could not open the PTM SharedExtSaveData archive!");
 
         FileSys::Path gamecoin_path("/gamecoin.dat");
-        Service::FS::CreateFileInArchive(*archive_result, gamecoin_path, sizeof(GameCoin));
         FileSys::Mode open_mode = {};
         open_mode.write_flag.Assign(1);
+        open_mode.create_flag.Assign(1);
         // Open the file and write the default gamecoin information
         auto gamecoin_result =
             Service::FS::OpenFileFromArchive(*archive_result, gamecoin_path, open_mode);

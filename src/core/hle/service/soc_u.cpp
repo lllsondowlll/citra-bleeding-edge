@@ -362,18 +362,18 @@ static void Socket(Interface* self) {
         return;
     }
 
-    u32 ret = static_cast<u32>(::socket(domain, type, protocol));
+    u32 socket_handle = static_cast<u32>(::socket(domain, type, protocol));
 
-    if ((s32)ret != SOCKET_ERROR_VALUE)
-        open_sockets[ret] = {ret, true};
+    if ((s32)socket_handle != SOCKET_ERROR_VALUE)
+        open_sockets[socket_handle] = {socket_handle, true};
 
     int result = 0;
-    if ((s32)ret == SOCKET_ERROR_VALUE)
-        ret = TranslateError(GET_ERRNO);
+    if ((s32)socket_handle == SOCKET_ERROR_VALUE)
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[0] = IPC::MakeHeader(2, 2, 0);
     cmd_buffer[1] = result;
-    cmd_buffer[2] = ret;
+    cmd_buffer[2] = socket_handle;
 }
 
 static void Bind(Interface* self) {
@@ -393,15 +393,15 @@ static void Bind(Interface* self) {
 
     sockaddr sock_addr = CTRSockAddr::ToPlatform(ctr_sock_addr);
 
-    int ret = ::bind(socket_handle, &sock_addr, std::max<u32>(sizeof(sock_addr), len));
+    int res = ::bind(socket_handle, &sock_addr, std::max<u32>(sizeof(sock_addr), len));
 
     int result = 0;
-    if (ret != 0)
-        ret = TranslateError(GET_ERRNO);
+    if (res != 0)
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[0] = IPC::MakeHeader(5, 2, 0);
     cmd_buffer[1] = result;
-    cmd_buffer[2] = ret;
+    cmd_buffer[2] = res;
 }
 
 static void Fcntl(Interface* self) {
@@ -426,7 +426,8 @@ static void Fcntl(Interface* self) {
 #else
         int ret = ::fcntl(socket_handle, F_GETFL, 0);
         if (ret == SOCKET_ERROR_VALUE) {
-            posix_ret = TranslateError(GET_ERRNO);
+            result = TranslateError(GET_ERRNO);
+            posix_ret = -1;
             return;
         }
         posix_ret = 0;
@@ -438,7 +439,8 @@ static void Fcntl(Interface* self) {
         unsigned long tmp = (ctr_arg & 4 /* O_NONBLOCK */) ? 1 : 0;
         int ret = ioctlsocket(socket_handle, FIONBIO, &tmp);
         if (ret == SOCKET_ERROR_VALUE) {
-            posix_ret = TranslateError(GET_ERRNO);
+            result = TranslateError(GET_ERRNO);
+            posix_ret = -1;
             return;
         }
         auto iter = open_sockets.find(socket_handle);
@@ -447,7 +449,8 @@ static void Fcntl(Interface* self) {
 #else
         int flags = ::fcntl(socket_handle, F_GETFL, 0);
         if (flags == SOCKET_ERROR_VALUE) {
-            posix_ret = TranslateError(GET_ERRNO);
+            result = TranslateError(GET_ERRNO);
+            posix_ret = -1;
             return;
         }
 
@@ -457,13 +460,15 @@ static void Fcntl(Interface* self) {
 
         int ret = ::fcntl(socket_handle, F_SETFL, flags);
         if (ret == SOCKET_ERROR_VALUE) {
-            posix_ret = TranslateError(GET_ERRNO);
+            result = TranslateError(GET_ERRNO);
+            posix_ret = -1;
             return;
         }
 #endif
     } else {
         LOG_ERROR(Service_SOC, "Unsupported command (%d) in fcntl call", ctr_cmd);
-        posix_ret = TranslateError(EINVAL); // TODO: Find the correct error
+        result = TranslateError(EINVAL); // TODO: Find the correct error
+        posix_ret = -1;
         return;
     }
 }
@@ -476,7 +481,7 @@ static void Listen(Interface* self) {
     int ret = ::listen(socket_handle, backlog);
     int result = 0;
     if (ret != 0)
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[0] = IPC::MakeHeader(3, 2, 0);
     cmd_buffer[1] = result;
@@ -499,7 +504,7 @@ static void Accept(Interface* self) {
 
     int result = 0;
     if ((s32)ret == SOCKET_ERROR_VALUE) {
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
     } else {
         CTRSockAddr ctr_addr = CTRSockAddr::FromPlatform(addr);
         Memory::WriteBlock(cmd_buffer[0x104 >> 2], &ctr_addr, sizeof(ctr_addr));
@@ -540,7 +545,7 @@ static void Close(Interface* self) {
 
     int result = 0;
     if (ret != 0)
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[2] = ret;
     cmd_buffer[1] = result;
@@ -584,7 +589,7 @@ static void SendTo(Interface* self) {
 
     int result = 0;
     if (ret == SOCKET_ERROR_VALUE)
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[2] = ret;
     cmd_buffer[1] = result;
@@ -633,7 +638,7 @@ static void RecvFrom(Interface* self) {
     int result = 0;
     int total_received = ret;
     if (ret == SOCKET_ERROR_VALUE) {
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
         total_received = 0;
     } else {
         // Write only the data we received to avoid overwriting parts of the buffer with zeros
@@ -668,7 +673,7 @@ static void Poll(Interface* self) {
     std::vector<pollfd> platform_pollfd(nfds);
     std::transform(ctr_fds.begin(), ctr_fds.end(), platform_pollfd.begin(), CTRPollFD::ToPlatform);
 
-    int ret = ::poll(platform_pollfd.data(), nfds, timeout);
+    const int ret = ::poll(platform_pollfd.data(), nfds, timeout);
 
     // Now update the output pollfd structure
     std::transform(platform_pollfd.begin(), platform_pollfd.end(), ctr_fds.begin(),
@@ -678,7 +683,7 @@ static void Poll(Interface* self) {
 
     int result = 0;
     if (ret == SOCKET_ERROR_VALUE)
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[1] = result;
     cmd_buffer[2] = ret;
@@ -705,7 +710,7 @@ static void GetSockName(Interface* self) {
 
     int result = 0;
     if (ret != 0)
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[2] = ret;
     cmd_buffer[1] = result;
@@ -719,7 +724,7 @@ static void Shutdown(Interface* self) {
     int ret = ::shutdown(socket_handle, how);
     int result = 0;
     if (ret != 0)
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
     cmd_buffer[2] = ret;
     cmd_buffer[1] = result;
 }
@@ -745,7 +750,7 @@ static void GetPeerName(Interface* self) {
 
     int result = 0;
     if (ret != 0)
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[2] = ret;
     cmd_buffer[1] = result;
@@ -772,7 +777,7 @@ static void Connect(Interface* self) {
     int ret = ::connect(socket_handle, &input_addr, sizeof(input_addr));
     int result = 0;
     if (ret != 0)
-        ret = TranslateError(GET_ERRNO);
+        result = TranslateError(GET_ERRNO);
 
     cmd_buffer[0] = IPC::MakeHeader(6, 2, 0);
     cmd_buffer[1] = result;
@@ -810,7 +815,7 @@ static void GetSockOpt(Interface* self) {
     int optname = TranslateSockOpt(cmd_buffer[3]);
     socklen_t optlen = (socklen_t)cmd_buffer[4];
 
-    int ret = 0;
+    int ret = -1;
     int err = 0;
 
     if (optname < 0) {
@@ -825,8 +830,9 @@ static void GetSockOpt(Interface* self) {
         // >> 2  = convert to u32 offset instead of byte offset (cmd_buffer = u32*)
         char* optval = reinterpret_cast<char*>(Memory::GetPointer(cmd_buffer[0x104 >> 2]));
 
-        err = ::getsockopt(socket_handle, level, optname, optval, &optlen);
-        if (err == SOCKET_ERROR_VALUE) {
+        ret = ::getsockopt(socket_handle, level, optname, optval, &optlen);
+        err = 0;
+        if (ret == SOCKET_ERROR_VALUE) {
             err = TranslateError(GET_ERRNO);
         }
     }
@@ -843,7 +849,7 @@ static void SetSockOpt(Interface* self) {
     u32 level = cmd_buffer[2];
     int optname = TranslateSockOpt(cmd_buffer[3]);
 
-    int ret = 0;
+    int ret = -1;
     int err = 0;
 
     if (optname < 0) {
@@ -856,8 +862,9 @@ static void SetSockOpt(Interface* self) {
         socklen_t optlen = static_cast<socklen_t>(cmd_buffer[4]);
         const char* optval = reinterpret_cast<const char*>(Memory::GetPointer(cmd_buffer[8]));
 
-        err = static_cast<u32>(::setsockopt(socket_handle, level, optname, optval, optlen));
-        if (err == SOCKET_ERROR_VALUE) {
+        ret = static_cast<u32>(::setsockopt(socket_handle, level, optname, optval, optlen));
+        err = 0;
+        if (ret == SOCKET_ERROR_VALUE) {
             err = TranslateError(GET_ERRNO);
         }
     }
