@@ -3,12 +3,13 @@
 // Refer to the license.txt file included.
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstring>
 #include <memory>
 #include "common/logging/log.h"
 #include "common/string_util.h"
 #include "common/swap.h"
-#include "core/file_sys/archive_romfs.h"
+#include "core/file_sys/archive_selfncch.h"
 #include "core/hle/kernel/process.h"
 #include "core/hle/kernel/resource_limit.h"
 #include "core/hle/service/cfg/cfg.h"
@@ -253,7 +254,7 @@ ResultStatus AppLoader_NCCH::LoadExeFS() {
 
     // Skip NCSD header and load first NCCH (NCSD is just a container of NCCH files)...
     if (MakeMagic('N', 'C', 'S', 'D') == ncch_header.magic) {
-        LOG_WARNING(Loader, "Only loading the first (bootable) NCCH within the NCSD file!");
+        LOG_DEBUG(Loader, "Only loading the first (bootable) NCCH within the NCSD file!");
         ncch_offset = 0x4000;
         file.Seek(ncch_offset, SEEK_SET);
         file.ReadBytes(&ncch_header, sizeof(NCCH_Header));
@@ -277,8 +278,8 @@ ResultStatus AppLoader_NCCH::LoadExeFS() {
     priority = exheader_header.arm11_system_local_caps.priority;
     resource_limit_category = exheader_header.arm11_system_local_caps.resource_limit_category;
 
-    LOG_INFO(Loader, "Name:                        %s", exheader_header.codeset_info.name);
-    LOG_INFO(Loader, "Program ID:                  %016llX", ncch_header.program_id);
+    LOG_DEBUG(Loader, "Name:                        %s", exheader_header.codeset_info.name);
+    LOG_DEBUG(Loader, "Program ID:                  %016" PRIX64, ncch_header.program_id);
     LOG_DEBUG(Loader, "Code compressed:             %s", is_compressed ? "yes" : "no");
     LOG_DEBUG(Loader, "Entry point:                 0x%08X", entry_point);
     LOG_DEBUG(Loader, "Code size:                   0x%08X", code_size);
@@ -336,14 +337,16 @@ ResultStatus AppLoader_NCCH::Load() {
     if (result != ResultStatus::Success)
         return result;
 
+    LOG_INFO(Loader, "Program ID: %016" PRIX64, ncch_header.program_id);
+
     is_loaded = true; // Set state to loaded
 
     result = LoadExec(); // Load the executable into memory for booting
     if (ResultStatus::Success != result)
         return result;
 
-    Service::FS::RegisterArchiveType(std::make_unique<FileSys::ArchiveFactory_RomFS>(*this),
-                                     Service::FS::ArchiveIdCode::RomFS);
+    Service::FS::RegisterArchiveType(std::make_unique<FileSys::ArchiveFactory_SelfNCCH>(*this),
+                                     Service::FS::ArchiveIdCode::SelfNCCH);
 
     ParseRegionLockoutInfo();
 

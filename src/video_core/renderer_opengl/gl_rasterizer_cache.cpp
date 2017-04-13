@@ -17,6 +17,7 @@
 #include "common/vector_math.h"
 #include "core/frontend/emu_window.h"
 #include "core/memory.h"
+#include "core/settings.h"
 #include "video_core/pica_state.h"
 #include "video_core/renderer_opengl/gl_rasterizer_cache.h"
 #include "video_core/renderer_opengl/gl_state.h"
@@ -342,7 +343,7 @@ CachedSurface* RasterizerCacheOpenGL::GetSurface(const CachedSurface& params, bo
                 Pica::Texture::TextureInfo tex_info;
                 tex_info.width = params.width;
                 tex_info.height = params.height;
-                tex_info.format = (Pica::Regs::TextureFormat)params.pixel_format;
+                tex_info.format = (Pica::TexturingRegs::TextureFormat)params.pixel_format;
                 tex_info.SetDefaultStride();
                 tex_info.physical_address = params.addr;
 
@@ -510,7 +511,7 @@ CachedSurface* RasterizerCacheOpenGL::GetSurfaceRect(const CachedSurface& params
 }
 
 CachedSurface* RasterizerCacheOpenGL::GetTextureSurface(
-    const Pica::Regs::FullTextureConfig& config) {
+    const Pica::TexturingRegs::FullTextureConfig& config) {
 
     Pica::Texture::TextureInfo info =
         Pica::Texture::TextureInfo::FromPicaRegister(config.config, config.format);
@@ -525,7 +526,9 @@ CachedSurface* RasterizerCacheOpenGL::GetTextureSurface(
 }
 
 std::tuple<CachedSurface*, CachedSurface*, MathUtil::Rectangle<int>>
-RasterizerCacheOpenGL::GetFramebufferSurfaces(const Pica::Regs::FramebufferConfig& config) {
+RasterizerCacheOpenGL::GetFramebufferSurfaces(
+    const Pica::FramebufferRegs::FramebufferConfig& config) {
+
     const auto& regs = Pica::g_state.regs;
 
     // Make sur that framebuffers don't overlap if both color and depth are being used
@@ -537,11 +540,12 @@ RasterizerCacheOpenGL::GetFramebufferSurfaces(const Pica::Regs::FramebufferConfi
             config.GetColorBufferPhysicalAddress(),
             fb_area * GPU::Regs::BytesPerPixel(GPU::Regs::PixelFormat(config.color_format.Value())),
             config.GetDepthBufferPhysicalAddress(),
-            fb_area * Pica::Regs::BytesPerDepthPixel(config.depth_format));
+            fb_area * Pica::FramebufferRegs::BytesPerDepthPixel(config.depth_format));
     bool using_color_fb = config.GetColorBufferPhysicalAddress() != 0;
-    bool using_depth_fb = config.GetDepthBufferPhysicalAddress() != 0 &&
-                          (regs.output_merger.depth_test_enable ||
-                           regs.output_merger.depth_write_enable || !framebuffers_overlap);
+    bool using_depth_fb =
+        config.GetDepthBufferPhysicalAddress() != 0 &&
+        (regs.framebuffer.output_merger.depth_test_enable ||
+         regs.framebuffer.output_merger.depth_write_enable || !framebuffers_overlap);
 
     if (framebuffers_overlap && using_color_fb && using_depth_fb) {
         LOG_CRITICAL(Render_OpenGL, "Color and depth framebuffer memory regions overlap; "

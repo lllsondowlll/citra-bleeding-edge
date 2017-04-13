@@ -72,6 +72,7 @@ enum class Class : ClassType {
     Service_DSP,       ///< The DSP (DSP control) service
     Service_DLP,       ///< The DLP (Download Play) service
     Service_HID,       ///< The HID (Human interface device) service
+    Service_HTTP,      ///< The HTTP service
     Service_SOC,       ///< The SOC (Socket) service
     Service_IR,        ///< The IR service
     Service_Y2R,       ///< The Y2R (YUV to RGB conversion) service
@@ -79,6 +80,7 @@ enum class Class : ClassType {
     HW_Memory,         ///< Memory-map and address translation
     HW_LCD,            ///< LCD register emulation
     HW_GPU,            ///< GPU control emulation
+    HW_AES,            ///< AES engine emulation
     Frontend,          ///< Emulator UI
     Render,            ///< Emulator video output and hardware acceleration
     Render_Software,   ///< Software renderer backend
@@ -87,6 +89,7 @@ enum class Class : ClassType {
     Audio_DSP,         ///< The HLE implementation of the DSP
     Audio_Sink,        ///< Emulator audio output backend
     Loader,            ///< ROM loader
+    Input,             ///< Input emulation
     Count              ///< Total number of logging classes
 };
 

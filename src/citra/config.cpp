@@ -8,8 +8,10 @@
 #include "citra/default_ini.h"
 #include "common/file_util.h"
 #include "common/logging/log.h"
+#include "common/param_package.h"
 #include "config.h"
 #include "core/settings.h"
+#include "input_common/main.h"
 
 Config::Config() {
     // TODO: Don't hardcode the path; let the frontend decide where to put the config files.
@@ -37,25 +39,40 @@ bool Config::LoadINI(const std::string& default_contents, bool retry) {
     return true;
 }
 
-static const std::array<int, Settings::NativeInput::NUM_INPUTS> defaults = {
-    // directly mapped keys
-    SDL_SCANCODE_A, SDL_SCANCODE_S, SDL_SCANCODE_Z, SDL_SCANCODE_X, SDL_SCANCODE_Q, SDL_SCANCODE_W,
-    SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_M, SDL_SCANCODE_N, SDL_SCANCODE_B, SDL_SCANCODE_T,
-    SDL_SCANCODE_G, SDL_SCANCODE_F, SDL_SCANCODE_H, SDL_SCANCODE_I, SDL_SCANCODE_K, SDL_SCANCODE_J,
-    SDL_SCANCODE_L,
-
-    // indirectly mapped keys
-    SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, SDL_SCANCODE_D,
+static const std::array<int, Settings::NativeButton::NumButtons> default_buttons = {
+    SDL_SCANCODE_A, SDL_SCANCODE_S, SDL_SCANCODE_Z, SDL_SCANCODE_X, SDL_SCANCODE_T,
+    SDL_SCANCODE_G, SDL_SCANCODE_F, SDL_SCANCODE_H, SDL_SCANCODE_Q, SDL_SCANCODE_W,
+    SDL_SCANCODE_M, SDL_SCANCODE_N, SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_B,
 };
+
+static const std::array<std::array<int, 5>, Settings::NativeAnalog::NumAnalogs> default_analogs{{
+    {
+        SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, SDL_SCANCODE_D,
+    },
+    {
+        SDL_SCANCODE_I, SDL_SCANCODE_K, SDL_SCANCODE_J, SDL_SCANCODE_L, SDL_SCANCODE_D,
+    },
+}};
 
 void Config::ReadValues() {
     // Controls
-    for (int i = 0; i < Settings::NativeInput::NUM_INPUTS; ++i) {
-        Settings::values.input_mappings[Settings::NativeInput::All[i]] =
-            sdl2_config->GetInteger("Controls", Settings::NativeInput::Mapping[i], defaults[i]);
+    for (int i = 0; i < Settings::NativeButton::NumButtons; ++i) {
+        std::string default_param = InputCommon::GenerateKeyboardParam(default_buttons[i]);
+        Settings::values.buttons[i] =
+            sdl2_config->Get("Controls", Settings::NativeButton::mapping[i], default_param);
+        if (Settings::values.buttons[i].empty())
+            Settings::values.buttons[i] = default_param;
     }
-    Settings::values.pad_circle_modifier_scale =
-        (float)sdl2_config->GetReal("Controls", "pad_circle_modifier_scale", 0.5);
+
+    for (int i = 0; i < Settings::NativeAnalog::NumAnalogs; ++i) {
+        std::string default_param = InputCommon::GenerateAnalogParamFromKeys(
+            default_analogs[i][0], default_analogs[i][1], default_analogs[i][2],
+            default_analogs[i][3], default_analogs[i][4], 0.5f);
+        Settings::values.analogs[i] =
+            sdl2_config->Get("Controls", Settings::NativeAnalog::mapping[i], default_param);
+        if (Settings::values.analogs[i].empty())
+            Settings::values.analogs[i] = default_param;
+    }
 
     // Core
     Settings::values.use_cpu_jit = sdl2_config->GetBoolean("Core", "use_cpu_jit", true);
@@ -77,6 +94,23 @@ void Config::ReadValues() {
     Settings::values.layout_option =
         static_cast<Settings::LayoutOption>(sdl2_config->GetInteger("Layout", "layout_option", 0));
     Settings::values.swap_screen = sdl2_config->GetBoolean("Layout", "swap_screen", false);
+    Settings::values.custom_layout = sdl2_config->GetBoolean("Layout", "custom_layout", false);
+    Settings::values.custom_top_left =
+        static_cast<u16>(sdl2_config->GetInteger("Layout", "custom_top_left", 0));
+    Settings::values.custom_top_top =
+        static_cast<u16>(sdl2_config->GetInteger("Layout", "custom_top_top", 0));
+    Settings::values.custom_top_right =
+        static_cast<u16>(sdl2_config->GetInteger("Layout", "custom_top_right", 400));
+    Settings::values.custom_top_bottom =
+        static_cast<u16>(sdl2_config->GetInteger("Layout", "custom_top_bottom", 240));
+    Settings::values.custom_bottom_left =
+        static_cast<u16>(sdl2_config->GetInteger("Layout", "custom_bottom_left", 40));
+    Settings::values.custom_bottom_top =
+        static_cast<u16>(sdl2_config->GetInteger("Layout", "custom_bottom_top", 240));
+    Settings::values.custom_bottom_right =
+        static_cast<u16>(sdl2_config->GetInteger("Layout", "custom_bottom_right", 360));
+    Settings::values.custom_bottom_bottom =
+        static_cast<u16>(sdl2_config->GetInteger("Layout", "custom_bottom_bottom", 480));
 
     // Audio
     Settings::values.sink_id = sdl2_config->Get("Audio", "output_engine", "auto");

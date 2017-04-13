@@ -4,6 +4,7 @@
 
 #include "common/bit_field.h"
 #include "common/microprofile.h"
+#include "core/core.h"
 #include "core/hle/kernel/event.h"
 #include "core/hle/kernel/shared_memory.h"
 #include "core/hle/result.h"
@@ -118,10 +119,10 @@ static ResultCode WriteHWRegs(u32 base_address, u32 size_in_bytes, VAddr data_va
  * Updates sequential GSP GPU hardware registers using parallel arrays of source data and masks.
  * For each register, the value is updated only where the mask is high
  *
- * @param base_address The address of the first register in the sequence
+ * @param base_address  The address of the first register in the sequence
  * @param size_in_bytes The number of registers to update (size of data)
- * @param data A pointer to the source data to use for updates
- * @param masks A pointer to the masks
+ * @param data_vaddr    A virtual address to the source data to use for updates
+ * @param masks_vaddr   A virtual address to the masks
  * @return RESULT_SUCCESS if the parameters are valid, error code otherwise
  */
 static ResultCode WriteHWRegsWithMask(u32 base_address, u32 size_in_bytes, VAddr data_vaddr,
@@ -280,6 +281,7 @@ ResultCode SetBufferSwap(u32 screen_id, const FrameBufferInfo& info) {
 
     if (screen_id == 0) {
         MicroProfileFlip();
+        Core::System::GetInstance().perf_stats.EndGameFrame();
     }
 
     return RESULT_SUCCESS;

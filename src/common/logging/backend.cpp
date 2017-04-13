@@ -55,6 +55,7 @@ namespace Log {
     SUB(Service, DSP)                                                                              \
     SUB(Service, DLP)                                                                              \
     SUB(Service, HID)                                                                              \
+    SUB(Service, HTTP)                                                                             \
     SUB(Service, SOC)                                                                              \
     SUB(Service, IR)                                                                               \
     SUB(Service, Y2R)                                                                              \
@@ -62,6 +63,7 @@ namespace Log {
     SUB(HW, Memory)                                                                                \
     SUB(HW, LCD)                                                                                   \
     SUB(HW, GPU)                                                                                   \
+    SUB(HW, AES)                                                                                   \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Software)                                                                          \
@@ -69,6 +71,7 @@ namespace Log {
     CLS(Audio)                                                                                     \
     SUB(Audio, DSP)                                                                                \
     SUB(Audio, Sink)                                                                               \
+    CLS(Input)                                                                                     \
     CLS(Loader)
 
 // GetClassName is a macro defined by Windows.h, grrr...

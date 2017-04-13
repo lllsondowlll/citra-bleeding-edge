@@ -17,7 +17,9 @@
 #include <vector>
 #include "common/common_types.h"
 #include "common/vector_math.h"
-#include "video_core/pica.h"
+#include "video_core/regs_rasterizer.h"
+#include "video_core/regs_shader.h"
+#include "video_core/regs_texturing.h"
 
 namespace CiTrace {
 class Recorder;
@@ -85,7 +87,7 @@ public:
          * @param data Optional data pointer (if unused, this is a nullptr)
          * @note This function will perform nothing unless it is overridden in the child class.
          */
-        virtual void OnPicaBreakPointHit(Event, void*) {}
+        virtual void OnPicaBreakPointHit(Event event, void* data) {}
 
         /**
          * Action to perform when emulation is resumed from a breakpoint.
@@ -182,9 +184,9 @@ namespace DebugUtils {
 #define PICA_DUMP_TEXTURES 0
 #define PICA_LOG_TEV 0
 
-void DumpShader(const std::string& filename, const Regs::ShaderConfig& config,
+void DumpShader(const std::string& filename, const ShaderRegs& config,
                 const Shader::ShaderSetup& setup,
-                const Regs::VSOutputAttributes* output_attributes);
+                const RasterizerRegs::VSOutputAttributes* output_attributes);
 
 // Utility class to log Pica commands.
 struct PicaTrace {
@@ -205,13 +207,13 @@ inline bool IsPicaTracing() {
 void OnPicaRegWrite(PicaTrace::Write write);
 std::unique_ptr<PicaTrace> FinishPicaTracing();
 
-void DumpTexture(const Pica::Regs::TextureConfig& texture_config, u8* data);
+void DumpTexture(const TexturingRegs::TextureConfig& texture_config, u8* data);
 
-std::string GetTevStageConfigColorCombinerString(const Pica::Regs::TevStageConfig& tev_stage);
-std::string GetTevStageConfigAlphaCombinerString(const Pica::Regs::TevStageConfig& tev_stage);
+std::string GetTevStageConfigColorCombinerString(const TexturingRegs::TevStageConfig& tev_stage);
+std::string GetTevStageConfigAlphaCombinerString(const TexturingRegs::TevStageConfig& tev_stage);
 
 /// Dumps the Tev stage config to log at trace level
-void DumpTevStageConfig(const std::array<Pica::Regs::TevStageConfig, 6>& stages);
+void DumpTevStageConfig(const std::array<TexturingRegs::TevStageConfig, 6>& stages);
 
 /**
  * Used in the vertex loader to merge access records. TODO: Investigate if actually useful.

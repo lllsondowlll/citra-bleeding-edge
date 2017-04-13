@@ -64,7 +64,7 @@ signals:
 
 private:
     void InitializeWidgets();
-    void InitializeDebugMenuActions();
+    void InitializeDebugWidgets();
     void InitializeRecentFileMenuActions();
     void InitializeHotkeys();
 
@@ -72,15 +72,10 @@ private:
     void RestoreUIState();
 
     void ConnectWidgetEvents();
+    void ConnectMenuEvents();
 
-    /**
-     * Initializes the emulation system.
-     * @param system_mode The system mode with which to intialize the kernel.
-     * @returns Whether the system was properly initialized.
-     */
-    bool InitializeSystem(u32 system_mode);
-    bool LoadROM(const std::string& filename);
-    void BootGame(const std::string& filename);
+    bool LoadROM(const QString& filename);
+    void BootGame(const QString& filename);
     void ShutdownGame();
 
     /**
@@ -94,7 +89,7 @@ private:
      *
      * @param filename the filename to store
      */
-    void StoreRecentFile(const std::string& filename);
+    void StoreRecentFile(const QString& filename);
 
     /**
      * Updates the recent files menu.
@@ -110,6 +105,7 @@ private:
      * @return true if the user confirmed
      */
     bool ConfirmClose();
+    bool ConfirmChangeGame();
     void closeEvent(QCloseEvent* event) override;
 
 private slots:
@@ -131,10 +127,18 @@ private slots:
     void OnCreateGraphicsSurfaceViewer();
 
 private:
+    void UpdateStatusBar();
+
     Ui::MainWindow ui;
 
     GRenderWindow* render_window;
     GameList* game_list;
+
+    // Status bar elements
+    QLabel* emu_speed_label = nullptr;
+    QLabel* game_fps_label = nullptr;
+    QLabel* emu_frametime_label = nullptr;
+    QTimer status_bar_update_timer;
 
     std::unique_ptr<Config> config;
 
@@ -142,6 +146,7 @@ private:
     bool emulation_running = false;
     std::unique_ptr<EmuThread> emu_thread;
 
+    // Debugger panes
     ProfilerWidget* profilerWidget;
     MicroProfileDialog* microProfileDialog;
     DisassemblerWidget* disasmWidget;
@@ -155,6 +160,11 @@ private:
     WaitTreeWidget* waitTreeWidget;
 
     QAction* actions_recent_files[max_recent_files_item];
+
+protected:
+    void dropEvent(QDropEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dragMoveEvent(QDragMoveEvent* event) override;
 };
 
 #endif // _CITRA_QT_MAIN_HXX_

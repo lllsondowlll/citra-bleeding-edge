@@ -467,8 +467,8 @@ static void Break(u8 break_reason) {
 }
 
 /// Used to output a message on a debug hardware unit - does nothing on a retail unit
-static void OutputDebugString(const char* string) {
-    LOG_DEBUG(Debug_Emulated, "%s", string);
+static void OutputDebugString(const char* string, int len) {
+    LOG_DEBUG(Debug_Emulated, "%.*s", len, string);
 }
 
 /// Get resource limit
@@ -556,11 +556,21 @@ static ResultCode CreateThread(Kernel::Handle* out_handle, s32 priority, u32 ent
         break;
     }
 
-    if (processor_id == THREADPROCESSORID_1 || processor_id == THREADPROCESSORID_ALL ||
-        (processor_id == THREADPROCESSORID_DEFAULT &&
-         Kernel::g_current_process->ideal_processor == THREADPROCESSORID_1)) {
-        LOG_WARNING(Kernel_SVC,
-                    "Newly created thread is allowed to be run in the SysCore, unimplemented.");
+    if (processor_id == THREADPROCESSORID_ALL) {
+        LOG_INFO(Kernel_SVC,
+                 "Newly created thread is allowed to be run in any Core, unimplemented.");
+    }
+
+    if (processor_id == THREADPROCESSORID_DEFAULT &&
+        Kernel::g_current_process->ideal_processor == THREADPROCESSORID_1) {
+        LOG_WARNING(
+            Kernel_SVC,
+            "Newly created thread is allowed to be run in the SysCore (Core1), unimplemented.");
+    }
+
+    if (processor_id == THREADPROCESSORID_1) {
+        LOG_ERROR(Kernel_SVC,
+                  "Newly created thread must run in the SysCore (Core1), unimplemented.");
     }
 
     CASCADE_RESULT(SharedPtr<Thread> thread, Kernel::Thread::Create(name, entry_point, priority,
@@ -836,6 +846,11 @@ static ResultCode SetTimer(Kernel::Handle handle, s64 initial, s64 interval) {
     using Kernel::Timer;
 
     LOG_TRACE(Kernel_SVC, "called timer=0x%08X", handle);
+
+    if (initial < 0 || interval < 0) {
+        return ResultCode(ErrorDescription::OutOfRange, ErrorModule::Kernel,
+                          ErrorSummary::InvalidArgument, ErrorLevel::Permanent);
+    }
 
     SharedPtr<Timer> timer = Kernel::g_handle_table.Get<Timer>(handle);
     if (timer == nullptr)

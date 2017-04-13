@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <QFileSystemWatcher>
 #include <QModelIndex>
 #include <QSettings>
 #include <QStandardItem>
@@ -33,6 +34,8 @@ public:
     void SaveInterfaceLayout();
     void LoadInterfaceLayout();
 
+    static const QStringList supported_file_extensions;
+
 signals:
     void GameChosen(QString game_path);
     void ShouldCancelWorker();
@@ -44,8 +47,11 @@ private:
     void DonePopulating();
 
     void PopupContextMenu(const QPoint& menu_location);
+    void UpdateWatcherList(const std::string& path, unsigned int recursion);
+    void RefreshGameDirectory();
 
     QTreeView* tree_view = nullptr;
     QStandardItemModel* item_model = nullptr;
     GameListWorker* current_worker = nullptr;
+    QFileSystemWatcher watcher;
 };

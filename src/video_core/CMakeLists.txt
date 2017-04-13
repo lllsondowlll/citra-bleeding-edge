@@ -1,10 +1,9 @@
 set(SRCS
-            clipper.cpp
             command_processor.cpp
             debug_utils/debug_utils.cpp
             pica.cpp
             primitive_assembly.cpp
-            rasterizer.cpp
+            regs.cpp
             renderer_base.cpp
             renderer_opengl/gl_rasterizer.cpp
             renderer_opengl/gl_rasterizer_cache.cpp
@@ -14,7 +13,11 @@ set(SRCS
             renderer_opengl/renderer_opengl.cpp
             shader/shader.cpp
             shader/shader_interpreter.cpp
-            swrasterizer.cpp
+            swrasterizer/clipper.cpp
+            swrasterizer/framebuffer.cpp
+            swrasterizer/rasterizer.cpp
+            swrasterizer/swrasterizer.cpp
+            swrasterizer/texturing.cpp
             texture/etc1.cpp
             texture/texture_decode.cpp
             vertex_loader.cpp
@@ -22,7 +25,6 @@ set(SRCS
             )
 
 set(HEADERS
-            clipper.h
             command_processor.h
             debug_utils/debug_utils.h
             gpu_debugger.h
@@ -30,8 +32,14 @@ set(HEADERS
             pica_state.h
             pica_types.h
             primitive_assembly.h
-            rasterizer.h
             rasterizer_interface.h
+            regs.h
+            regs_framebuffer.h
+            regs_lighting.h
+            regs_pipeline.h
+            regs_rasterizer.h
+            regs_shader.h
+            regs_texturing.h
             renderer_base.h
             renderer_opengl/gl_rasterizer.h
             renderer_opengl/gl_rasterizer_cache.h
@@ -44,7 +52,11 @@ set(HEADERS
             shader/debug_data.h
             shader/shader.h
             shader/shader_interpreter.h
-            swrasterizer.h
+            swrasterizer/clipper.h
+            swrasterizer/framebuffer.h
+            swrasterizer/rasterizer.h
+            swrasterizer/swrasterizer.h
+            swrasterizer/texturing.h
             texture/etc1.h
             texture/texture_decode.h
             utils.h

@@ -20,10 +20,10 @@ set(SRCS
             file_sys/archive_extsavedata.cpp
             file_sys/archive_ncch.cpp
             file_sys/archive_other_savedata.cpp
-            file_sys/archive_romfs.cpp
             file_sys/archive_savedata.cpp
             file_sys/archive_sdmc.cpp
             file_sys/archive_sdmcwriteonly.cpp
+            file_sys/archive_selfncch.cpp
             file_sys/archive_source_sd_savedata.cpp
             file_sys/archive_systemsavedata.cpp
             file_sys/disk_archive.cpp
@@ -34,7 +34,6 @@ set(SRCS
             frontend/camera/factory.cpp
             frontend/camera/interface.cpp
             frontend/emu_window.cpp
-            frontend/key_map.cpp
             frontend/motion_emu.cpp
             gdbstub/gdbstub.cpp
             hle/config_mem.cpp
@@ -159,6 +158,9 @@ set(SRCS
             hle/service/y2r_u.cpp
             hle/shared_page.cpp
             hle/svc.cpp
+            hw/aes/arithmetic128.cpp
+            hw/aes/ccm.cpp
+            hw/aes/key.cpp
             hw/gpu.cpp
             hw/hw.cpp
             hw/lcd.cpp
@@ -170,6 +172,7 @@ set(SRCS
             loader/smdh.cpp
             tracer/recorder.cpp
             memory.cpp
+            perf_stats.cpp
             settings.cpp
             )
 
@@ -197,14 +200,15 @@ set(HEADERS
             file_sys/archive_extsavedata.h
             file_sys/archive_ncch.h
             file_sys/archive_other_savedata.h
-            file_sys/archive_romfs.h
             file_sys/archive_savedata.h
             file_sys/archive_sdmc.h
             file_sys/archive_sdmcwriteonly.h
+            file_sys/archive_selfncch.h
             file_sys/archive_source_sd_savedata.h
             file_sys/archive_systemsavedata.h
             file_sys/directory_backend.h
             file_sys/disk_archive.h
+            file_sys/errors.h
             file_sys/file_backend.h
             file_sys/ivfc_archive.h
             file_sys/path_parser.h
@@ -213,7 +217,7 @@ set(HEADERS
             frontend/camera/factory.h
             frontend/camera/interface.h
             frontend/emu_window.h
-            frontend/key_map.h
+            frontend/input.h
             frontend/motion_emu.h
             gdbstub/gdbstub.h
             hle/config_mem.h
@@ -342,6 +346,9 @@ set(HEADERS
             hle/service/y2r_u.h
             hle/shared_page.h
             hle/svc.h
+            hw/aes/arithmetic128.h
+            hw/aes/ccm.h
+            hw/aes/key.h
             hw/gpu.h
             hw/hw.h
             hw/lcd.h
@@ -356,13 +363,15 @@ set(HEADERS
             memory.h
             memory_setup.h
             mmio.h
+            perf_stats.h
             settings.h
             )
 
 include_directories(../../externals/dynarmic/include)
+include_directories(../../externals/cryptopp)
 
 create_directory_groups(${SRCS} ${HEADERS})
 
 add_library(core STATIC ${SRCS} ${HEADERS})
 
-target_link_libraries(core dynarmic)
+target_link_libraries(core dynarmic cryptopp)
